@@ -39,13 +39,12 @@ class GbkCodec extends Encoding {
 }
 
 int unicode2gbkOne(int unicode) {
+  int offset = 0;
 
-  int offset;
-
-  if (unicode <= 0x9FA5)
+  if (unicode <= 0x9FA5) {
     offset = unicode - 0x4E00;
-  else if (unicode > 0x9FA5) //是标点符号
-  {
+  } else if (unicode > 0x9FA5) {
+    //是标点符号
     if (unicode < 0xFF01 || unicode > 0xFF61) return 0; //没有对应编码
     offset = unicode - 0XFF01 + 0X9FA6 - 0X4E00;
   }
@@ -57,64 +56,64 @@ List<int> unicode2gbk(List<int> res) {
   for (int i = 0, l = res.length; i < l; ++i) {
     //注意这里必须是bytes array而不是word array，所以需要拆除高低位
     int unicode = res[i];
-    if(unicode <= 0x80){
+    if (unicode <= 0x80) {
       resp.add(unicode);
-    }else{
+    } else {
       int value = unicode2gbkOne(unicode);
-      if(value == 0){
+      if (value == 0) {
         continue;
       }
-      resp.add((value >> 8 )& 0xff );
-      resp.add( value & 0xff  );
+      resp.add((value >> 8) & 0xff);
+      resp.add(value & 0xff);
     }
-   // resp[i] = unicode2gbkOne(unicode);
+    // resp[i] = unicode2gbkOne(unicode);
   }
   return resp;
 }
 
-List<int> gbk2utf8(List<int> gbk_buf) {
-  return unicode2utf8(gbk2unicode(gbk_buf));
+List<int> gbk2utf8(List<int> gbkBuf) {
+  return unicode2utf8(gbk2unicode(gbkBuf));
 }
 
 /// gbk => unicode word array
 /// @param gbk_buf byte array
 /// @return   word array
-List<int> gbk2unicode(List<int> gbk_buf) {
-  int uni_ind = 0, gbk_ind = 0, uni_num = 0;
+List<int> gbk2unicode(List<int> gbkBuf) {
+  int uniInd = 0, gbkInd = 0, uniNum = 0;
   int ch;
   int word; //unsigned short
-  int word_pos;
-  List<int> uni_ptr = new List()..length = gbk_buf.length;
-
-  for (; gbk_ind < gbk_buf.length;) {
-    ch = gbk_buf[gbk_ind];
+  int wordPos;
+  // List<int> uniPtr = new List()..length = gbkBuf.length;
+  List<int> uniPtr = List.filled(gbkBuf.length, 0);
+  for (; gbkInd < gbkBuf.length;) {
+    ch = gbkBuf[gbkInd];
     if (ch > 0x80) {
-      word = gbk_buf[gbk_ind];
+      word = gbkBuf[gbkInd];
       word <<= 8;
-      word += gbk_buf[gbk_ind + 1];
-      gbk_ind += 2;
-      word_pos = word - gbk_first_code;
+      word += gbkBuf[gbkInd + 1];
+      gbkInd += 2;
+      wordPos = word - gbk_first_code;
       if (word >= gbk_first_code &&
           word <= gbk_last_code &&
-          (word_pos < unicode_buf_size)) {
-        uni_ptr[uni_ind] = unicodeTables[word_pos];
-        uni_ind++;
-        uni_num++;
+          (wordPos < unicode_buf_size)) {
+        uniPtr[uniInd] = unicodeTables[wordPos];
+        uniInd++;
+        uniNum++;
       }
     } else {
-      gbk_ind++;
-      uni_ptr[uni_ind] = ch;
-      uni_ind++;
-      uni_num++;
+      gbkInd++;
+      uniPtr[uniInd] = ch;
+      uniInd++;
+      uniNum++;
     }
   }
 
-  uni_ptr.length = uni_num;
+  uniPtr.length = uniNum;
 
-  return uni_ptr;
+  return uniPtr;
 }
 
-int z_pos(int x) {
+int zPos(int x) {
   for (int i = 0; i < 5; i++, x <<= 1) {
     if ((x & 0x80) == 0) return i;
   }
@@ -128,15 +127,15 @@ List<int> utf82unicode(List<int> bytes) {
   List<int> loc = [];
 
   for (int i = 0; i < bytes.length;) {
-    int byte_cnt = z_pos(bytes[i]);
-    int sum = bytes[i] & mask[byte_cnt];
+    int byteCnt = zPos(bytes[i]);
+    int sum = bytes[i] & mask[byteCnt];
 
-    for (int j = 1; j < byte_cnt; j++) {
+    for (int j = 1; j < byteCnt; j++) {
       sum <<= 6;
       sum |= bytes[i + j] & mask[1];
     }
 
-    i += byte_cnt > 0 ? byte_cnt : 1;
+    i += byteCnt > 0 ? byteCnt : 1;
     loc.add(sum);
   }
 
@@ -146,7 +145,8 @@ List<int> utf82unicode(List<int> bytes) {
 ///Word array to utf-8
 List<int> unicode2utf8(List<int> wordArray) {
   // a utf-8 character is 3 bytes
-  List<int> list = new List()..length = wordArray.length * 3;
+  // List<int> list = new List()..length = wordArray.length * 3;
+  List<int> list = List.filled(wordArray.length * 3, 0);
   int pos = 0;
 
   for (int i = 0, c = wordArray.length; i < c; ++i) {
